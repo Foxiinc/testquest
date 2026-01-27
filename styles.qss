@@ -1,0 +1,63 @@
+QMainWindow {
+    background-color: #f2f2f2;
+    font-family: Arial;
+}
+
+/* Заголовок */
+#label_title {
+    background-color: #2ecc40;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 12px;
+}
+
+/* Верхнее меню */
+QPushButton {
+    background-color: #d9d9d9;
+    border: 1px solid #bfbfbf;
+    padding: 8px;
+    font-size: 14px;
+}
+
+QPushButton:hover {
+    background-color: #cfcfcf;
+}
+
+/* Поля ввода */
+QLineEdit {
+    border: 1px solid #bfbfbf;
+    padding: 6px;
+    background: white;
+}
+
+/* Кнопка "Записать" */
+#btn_save, #btn_auth, #btn_next {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+}
+
+/* Инфо блок справа */
+#label_status {
+    color: green;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Зеленый ID блок */
+#label_id {
+    background-color: #2ecc40;
+    color: white;
+    font-size: 18px;
+    padding: 10px;
+    font-weight: bold;
+}
+
+/* Терминал */
+#label_terminal {
+    background: #eaeaea;
+    border-top: 1px solid #bfbfbf;
+    padding: 6px;
+    font-size: 12px;
+}
