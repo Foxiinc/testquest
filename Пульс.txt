@@ -1,0 +1,94 @@
+#include <TimerOne.h>
+
+// Настройки
+#define SIGNAL_PIN A0
+#define SERIAL_BAUD 115200
+#define SAMPLING_INTERVAL 3000  // 3000 мкс = 3 мс (≈333 Гц)
+
+// Параметры детекции пульса
+const float ALPHA = 0.3;           // Коэффициент экспоненциального сглаживания
+const float THRESHOLD_MULT = 1.8;  // Порог = шум × множитель
+const unsigned long MIN_INTERVAL = 300;  // Мин. интервал между ударами (мс) → 200 уд./мин
+const unsigned long MAX_INTERVAL = 1500; // Макс. интервал (мс) → 40 уд./мин
+const int HEART_WINDOW = 5;         // Усреднение ЧСС по 5 ударам
+
+
+// Переменные
+int rawValue = 0;
+float filtered = 0;
+float prevFiltered = 0;
+float delta = 0;
+float noiseLevel = 5.0;
+unsigned long lastBeat = 0;
+int heartRate = 0;
+int beatCount = 0;
+int heartBuffer[HEART_WINDOW] = {0};
+int heartIndex = 0;
+
+// Для отладки (вывод раз в секунду)
+unsigned long lastPrint = 0;
+
+// Функция обработки сигнала (вызывается таймером)
+void sendData() {
+  // Считываем и нормируем сигнал
+  rawValue = analogRead(SIGNAL_PIN);
+  byte normalized = map(rawValue, 0, 1023, 0, 255);
+
+  // Экспоненциальное сглаживание
+  filtered += (normalized - filtered) * ALPHA;
+
+  // Расчёт дельта (скорость изменения)
+  delta = filtered - prevFiltered;
+  prevFiltered = filtered;
+
+  // Обновляем уровень шума (раз в 2 сек)
+  if (millis() - lastPrint >= 2000) {
+    noiseLevel = max(noiseLevel, abs(delta) * 1.5);
+    lastPrint = millis();
+  }
+
+  // Порог для детекции удара
+  float threshold = noiseLevel * THRESHOLD_MULT;
+
+
+  // Детектирование пика (подъём + амплитуда)
+  if (delta > threshold && filtered > 60) {
+    unsigned long now = millis();
+    unsigned long interval = now - lastBeat;
+
+    // Проверка интервала (40–200 уд./мин)
+    if (interval >= MIN_INTERVAL && interval <= MAX_INTERVAL) {
+      heartRate = 60000 / interval;
+      lastBeat = now;
+
+      // Усреднение по 5 ударам
+      heartBuffer[heartIndex] = heartRate;
+      heartIndex = (heartIndex + 1) % HEART_WINDOW;
+      beatCount++;
+    }
+  }
+
+  // Вывод ЧСС в монитор порта (раз в секунду)
+  if (millis() - lastPrint >= 1000) {
+    if (beatCount >= HEART_WINDOW) {
+      int sum = 0;
+      for (int i = 0; i < HEART_WINDOW; i++) {
+        sum += heartBuffer[i];
+      }
+      Serial.println(sum / HEART_WINDOW);  // Только число (уд./мин)
+    } else {
+      Serial.println("---");  // Недостаточно данных
+    }
+    lastPrint = millis();
+  }
+}
+
+void setup() {
+  Serial.begin(SERIAL_BAUD);
+  Timer1.initialize(SAMPLING_INTERVAL);
+  Timer1.attachInterrupt(sendData);
+}
+
+void loop() {
+  // Всё работает через прерывание Timer1
+}
